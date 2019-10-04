@@ -6,7 +6,7 @@
 docker:
   registry: codejamninja
   image: stash-mysql
-  tag: bdb3e8d-dirty_linux_amd64
+  tag: 8.0.3-4-g9a830c2_linux_amd64
 
 # optional argument to send mysqldump or mysql command
 backup:
