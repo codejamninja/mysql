@@ -1,17 +1,15 @@
 ---
-
-
-title: Backup MySQL | Stash
+title: Backup & Restore MySQL | Stash
 description: Backup MySQL database using Stash
 menu:
-  product_stash_0.8.3:
-    identifier: database-mysql
-    name: MySQL
-    parent: database
-    weight: 20
+  product_stash_{{ .version }}:
+    identifier: mysql-guide-{{ .subproject_version }}
+    name: Backup & Restore MySQL
+    parent: stash-mysql-guides-{{ .subproject_version }}
+    weight: 10
 product_name: stash
-menu_name: product_stash_0.8.3
-section_menu_id: guides
+menu_name: product_stash_{{ .version }}
+section_menu_id: stash-addons
 ---
 
 # Backup and Restore MySQL database using Stash
@@ -21,21 +19,18 @@ Stash 0.9.0+ supports backup and restoration of MySQL databases. This guide will
 ## Before You Begin
 
 - At first, you need to have a Kubernetes cluster, and the `kubectl` command-line tool must be configured to communicate with your cluster. If you do not already have a cluster, you can create one by using Minikube.
-
-- Install Stash in your cluster following the steps [here](https://appscode.com/products/stash/0.8.3/setup/install/).
-
-- Install [KubeDB](https://kubedb.com) in your cluster following the steps [here](https://kubedb.com/docs/0.12.0/setup/install/). This step is optional. You can deploy your database using any method you want. We are using KubeDB because it automates some tasks that you have to do manually otherwise.
-
-- If you are not familiar with how Stash takes backup of databases and restores them, please check the following guide:
-  - [How Stash takes backup of databases and restores them](https://appscode.com/products/stash/0.8.3/guides/databases/overview/).
+- Install Stash in your cluster following the steps [here](/docs/setup/install.md).
+- Install MySQL addon for Stash following the steps [here](/docs/addons/mysql/setup/install.md)
+- Install [KubeDB](https://kubedb.com) in your cluster following the steps [here](https://kubedb.com/docs/setup/install/). This step is optional. You can deploy your database using any method you want. We are using KubeDB because KubeDB simplifies many of the difficult or tedious management tasks of running a production grade databases on private and public clouds.
+- If you are not familiar with how Stash backup and restore MySQL databases, please check the following guide [here](/docs/addons/mysql/overview.md).
 
 You have to be familiar with following custom resources:
 
-- [AppBinding](https://appscode.com/products/stash/0.8.3/concepts/crds/appbinding/)
-- [Function](https://appscode.com/products/stash/0.8.3/concepts/crds/function/)
-- [Task](https://appscode.com/products/stash/0.8.3/concepts/crds/task/)
-- [BackupConfiguration](https://appscode.com/products/stash/0.8.3/concepts/crds/backupconfiguration/)
-- [RestoreSession](https://appscode.com/products/stash/0.8.3/concepts/crds/restoresession/)
+- [AppBinding](/docs/concepts/crds/appbinding.md)
+- [Function](/docs/concepts/crds/function.md)
+- [Task](/docs/concepts/crds/task.md)
+- [BackupConfiguration](/docs/concepts/crds/backupconfiguration.md)
+- [RestoreSession](/docs/concepts/crds/restoresession.md)
 
 To keep things isolated, we are going to use a separate namespace called `demo` throughout this tutorial. Create `demo` namespace if you haven't created yet.
 
@@ -44,76 +39,7 @@ $ kubectl create ns demo
 namespace/demo created
 ```
 
-> Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/mysql/tree/master/docs/examples).
-
-## Install MySQL Catalog for Stash
-
-Stash uses a `Function-Task` model to backup databases. We have to install MySQL catalogs (`stash-mysql`) for Stash. This catalog creates necessary `Function` and `Task` definitions to backup/restore MySQL databases.
-
-You can install the catalog either as a helm chart or you can create only the YAMLs of the respective resources.
-
-<ul class="nav nav-tabs" id="installerTab" role="tablist">
-  <li class="nav-item">
-    <a class="nav-link" id="helm-tab" data-toggle="tab" href="#helm" role="tab" aria-controls="helm" aria-selected="false">Helm</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link active" id="script-tab" data-toggle="tab" href="#script" role="tab" aria-controls="script" aria-selected="true">Script</a>
-  </li>
-</ul>
-<div class="tab-content" id="installerTabContent">
- <!-- ------------ Helm Tab Begins----------- -->
-  <div class="tab-pane fade" id="helm" role="tabpanel" aria-labelledby="helm-tab">
-
-### Install as chart release
-
-Run the following script to install `stash-mysql` catalog as a Helm chart.
-
-```console
-curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/chart.sh | bash -s -- --catalog=stash-mysql
-```
-
-</div>
-<!-- ------------ Helm Tab Ends----------- -->
-
-<!-- ------------ Script Tab Begins----------- -->
-<div class="tab-pane fade show active" id="script" role="tabpanel" aria-labelledby="script-tab">
-
-### Install only YAMLs
-
-Run the following script to install `stash-mysql` catalog as Kubernetes YAMLs.
-
-```console
-curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/script.sh | bash -s -- --catalog=stash-mysql
-```
-
-</div>
-<!-- ------------ Script Tab Ends----------- -->
-</div>
-
-Once installed, this will create `mysql-backup-*` and `mysql-restore-*` Functions for all supported MySQL versions. To verify, run the following command:
-
-```console
-$ kubectl get functions.stash.appscode.com
-NAME                    AGE
-mysql-backup-8.0.14     20s
-mysql-backup-5.7        20s
-pvc-backup              7h6m
-pvc-restore             7h6m
-update-status           7h6m
-```
-
-Also, verify that the necessary `Task` have been created.
-
-```console
-$ kubectl get tasks.stash.appscode.com
-NAME                    AGE
-mysql-backup-8.0.14     2m7s
-mysql-backup-5.7        2m7s
-pvc-backup              7h7m
-pvc-restore             7h7m
-```
-
-Now, Stash is ready to backup MySQL database.
+> Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/mysql/tree/{{< param "info.subproject_version" >}}/docs/examples).
 
 ## Backup MySQL
 
@@ -149,7 +75,7 @@ spec:
 Create the above `MySQL` CRD,
 
 ```bash
-$ kubectl apply -f ./docs/examples/backup/mysql.yaml
+$ kubectl apply -f https://github.com/stashed/mysql/raw/{{< param "info.subproject_version" >}}/docs/examples/backup/sample-mysql.yaml
 mysql.kubedb.com/sample-mysql created
 ```
 
@@ -176,7 +102,7 @@ sample-mysql       ClusterIP   10.101.2.138   <none>        3306/TCP   5m33s
 sample-mysql-gvr   ClusterIP   None           <none>        3306/TCP   5m33s
 ```
 
-Here, we have to use service `sample-mysql` and secret `sample-mysql-auth` to connect with the database. KubeDB creates an [AppBinding](https://appscode.com/products/stash/0.8.3/concepts/crds/appbinding/) CRD that holds the necessary information to connect with the database.
+Here, we have to use service `sample-mysql` and secret `sample-mysql-auth` to connect with the database. KubeDB creates an [AppBinding](/docs/concepts/crds/appbinding.md) CRD that holds the necessary information to connect with the database.
 
 **Verify AppBinding:**
 
@@ -198,7 +124,7 @@ $ kubectl get appbindings -n demo sample-mysql -o yaml
 apiVersion: appcatalog.appscode.com/v1alpha1
 kind: AppBinding
 metadata:
-  creationTimestamp: "2019-08-02T05:13:37Z"
+  creationTimestamp: "2019-09-27T05:07:34Z"
   generation: 1
   labels:
     app.kubernetes.io/component: database
@@ -210,15 +136,6 @@ metadata:
     kubedb.com/name: sample-mysql
   name: sample-mysql
   namespace: demo
-  ownerReferences:
-  - apiVersion: kubedb.com/v1alpha1
-    blockOwnerDeletion: false
-    kind: MySQL
-    name: sample-mysql
-    uid: dab30216-485f-405a-af4f-09fe5f0ad88e
-  resourceVersion: "7970"
-  selfLink: /apis/appcatalog.appscode.com/v1alpha1/namespaces/demo/appbindings/sample-mysql
-  uid: d2a932e5-924f-4321-b206-7b9da534cf12
 spec:
   clientConfig:
     service:
@@ -348,7 +265,7 @@ Now, we are ready to backup the database.
 
 ### Prepare Backend
 
-We are going to store our backed up data into a GCS bucket. At first, we need to create a secret with GCS credentials then we need to create a `Repository` CRD. If you want to use a different backend, please read the respective backend configuration doc from [here](https://appscode.com/products/stash/0.8.3/guides/backends/overview/).
+We are going to store our backed up data into a GCS bucket. At first, we need to create a secret with GCS credentials then we need to create a `Repository` CRD. If you want to use a different backend, please read the respective backend configuration doc from [here](/docs/guides/latest/backends/overview.md).
 
 **Create Storage Secret:**
 
@@ -386,7 +303,7 @@ spec:
 Let's create the `Repository` we have shown above,
 
 ```bash
-$ kubectl create -f ./docs/examples/backup/repository.yaml
+$ kubectl create -f https://github.com/stashed/mysql/raw/{{< param "info.subproject_version" >}}/docs/examples/backup/repository.yaml
 repository.stash.appscode.com/gcs-repo created
 ```
 
@@ -418,6 +335,7 @@ spec:
       kind: AppBinding
       name: sample-mysql
   retentionPolicy:
+    name: keep-last-5
     keepLast: 5
     prune: true
 ```
@@ -431,7 +349,7 @@ Here,
 Let's create the `BackupConfiguration` CRD we have shown above,
 
 ```bash
-$ kubectl create -f ./docs/examples/backup/backupconfiguration.yaml
+$ kubectl create -f https://github.com/stashed/mysql/raw/{{< param "info.subproject_version" >}}/docs/examples/backup/backupconfiguration.yaml
 backupconfiguration.stash.appscode.com/sample-mysql-backup created
 ```
 
@@ -454,13 +372,16 @@ The `sample-mysql-backup` CronJob will trigger a backup on each scheduled slot b
 Wait for a schedule to appear. Run the following command to watch `BackupSession` CRD,
 
 ```bash
-$ kubectl get backupsession -n demo -w
-NAME                             BACKUPCONFIGURATION   PHASE     AGE
-sample-mysql-backup-1564729507   sample-mysql-backup   Running   51s
-sample-mysql-backup-1564729507   sample-mysql-backup   Succeeded   51s
+$ watch -n 1 kubectl get backupsession -n demo -l=stash.appscode.com/backup-configuration=sample-mysql-backup
+
+Every 1.0s: kubectl get backupsession -n demo -l=stash.appscode.com/backup-configuration=sample-mysql-backup   workstation: Fri Sep 27 11:14:43 2019
+NAMESPACE   NAME                             BACKUPCONFIGURATION   PHASE       AGE
+demo        sample-mysql-backup-1569561245   sample-mysql-backup   Succeeded   38s
 ```
 
 Here, the phase **`Succeeded`** means that the backupsession has been succeeded.
+
+>Note: Backup CronJob creates `BackupSession` crds with the following label `stash.appscode.com/backup-configuration=<BackupConfiguration crd name>`. We can use this label to watch only the `BackupSession` of our desired `BackupConfiguration`.
 
 **Verify Backup:**
 
@@ -469,13 +390,13 @@ Now, we are going to verify whether the backed up data is in the backend. Once a
 ```bash
 $ kubectl get repository -n demo gcs-repo
 NAME       INTEGRITY   SIZE        SNAPSHOT-COUNT   LAST-SUCCESSFUL-BACKUP   AGE
-gcs-repo   true        6.815 MiB   2                3m39s                    30m
+gcs-repo   true        6.815 MiB   1                3m39s                    30m
 ```
 
 Now, if we navigate to the GCS bucket, we will see the backed up data has been stored in `demo/mysql/sample-mysql` directory as specified by `.spec.backend.gcs.prefix` field of Repository CRD.
 
 <figure align="center">
-  <img alt="Backup data in GCS Bucket" src="/docs/images/sample-mysql-backup.png">
+  <img alt="Backup data in GCS Bucket" src="../images/sample-mysql-backup.png">
   <figcaption align="center">Fig: Backup data in GCS Bucket</figcaption>
 </figure>
 
@@ -546,7 +467,7 @@ Here,
 Let's create the above database,
 
 ```bash
-$ kubectl apply -f ./docs/examples/restore/restored-mysql.yaml
+$ kubectl apply -f https://github.com/stashed/mysql/raw/{{< param "info.subproject_version" >}}/docs/examples/restore/restored-mysql.yaml
 mysql.kubedb.com/restored-mysql created
 ```
 
@@ -609,7 +530,7 @@ Here,
 Let's create the RestoreSession CRD object we have shown above,
 
 ```bash
-$ kubectl apply -f ./docs/examples/restore/restoresession.yaml
+$ kubectl apply -f https://github.com/stashed/mysql/raw/{{< param "info.subproject_version" >}}/docs/examples/restore/restoresession.yaml
 restoresession.stash.appscode.com/sample-mysql-restore created
 ```
 
@@ -618,10 +539,11 @@ Once, you have created the RestoreSession object, Stash will create a restore Jo
 Run the following command to watch the phase of the RestoreSession object,
 
 ```bash
-$ kubectl get restoresession -n demo sample-mysql-restore -w
-NAME                   REPOSITORY-NAME   PHASE       AGE
-sample-mysql-restore   gcs-repo          Running     3m15s
-sample-mysql-restore   gcs-repo          Succeeded   3m28s
+$ watch -n 1 kubectl get restoresession -n demo restore-sample-mysql
+
+Every 1.0s: kubectl get restoresession -n demo  restore-sample-mysql    workstation: Fri Sep 27 11:18:51 2019
+NAMESPACE   NAME                   REPOSITORY-NAME   PHASE       AGE
+demo        restore-sample-mysql   gcs-repo          Succeeded   59s
 ```
 
 Here, we can see from the output of the above command that the restore process succeeded.
@@ -714,55 +636,9 @@ So, from the above output, we can see that the `playground` database and the `eq
 To cleanup the Kubernetes resources created by this tutorial, run:
 
 ```bash
-$ kubectl delete restoresession -n demo sample-mysql-restore
-restoresession.stash.appscode.com "restore-sample-mysql" deleted
-
-$ kubectl delete backupconfiguration -n demo sample-mysql-backup
-backupconfiguration.stash.appscode.com "sample-mysql-backup" deleted
-
-$ kubectl delete my -n demo restored-mysql
-mysql.kubedb.com "restored-mysql" deleted
-
-$ kubectl delete my -n demo sample-mysql
-mysql.kubedb.com "sample-mysql" deleted
+kubectl delete backupconfiguration -n demo sample-mysql-backup
+kubectl delete restoresession -n demo restore-sample-mysql
+kubectl delete repository -n demo gcs-repo
+kubectl delete my -n demo restored-mysql
+kubectl delete my -n demo sample-mysql
 ```
-
-To cleanup the MySQL catalogs that we had created earlier, run the following:
-
-<ul class="nav nav-tabs" id="uninstallerTab" role="tablist">
-  <li class="nav-item">
-    <a class="nav-link" id="helm-uninstaller-tab" data-toggle="tab" href="#helm-uninstaller" role="tab" aria-controls="helm-uninstaller" aria-selected="false">Helm</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link active" id="script-uninstaller-tab" data-toggle="tab" href="#script-uninstaller" role="tab" aria-controls="script-uninstaller" aria-selected="true">Script</a>
-  </li>
-</ul>
-<div class="tab-content" id="uninstallerTabContent">
- <!-- ------------ Helm Tab Begins----------- -->
-  <div class="tab-pane fade" id="helm-uninstaller" role="tabpanel" aria-labelledby="helm-uninstaller-tab">
-
-### Uninstall  `stash-mysql-*` charts
-
-Run the following script to uninstall `stash-mysql` catalogs that was installed as a Helm chart.
-
-```console
-curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/chart.sh | bash -s -- --uninstall --catalog=stash-mysql
-```
-
-</div>
-<!-- ------------ Helm Tab Ends----------- -->
-
-<!-- ------------ Script Tab Begins----------- -->
-<div class="tab-pane fade show active" id="script-uninstaller" role="tabpanel" aria-labelledby="script-uninstaller-tab">
-
-### Uninstall `stash-mysql` catalog YAMLs
-
-Run the following script to uninstall `stash-mysql` catalog that was installed as Kubernetes YAMLs.
-
-```console
-curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/script.sh | bash -s -- --uninstall --catalog=stash-mysql
-```
-
-</div>
-<!-- ------------ Script Tab Ends----------- -->
-</div>
